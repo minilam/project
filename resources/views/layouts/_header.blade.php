@@ -11,7 +11,18 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
       <!-- Left Side Of Navbar -->
       <ul class="navbar-nav mr-auto">
-
+        <!-- 顶部的商品分类树 start-->
+          @if(isset($categoryTree))
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="categoryTree">商品分类
+                <b class="caret"></b>
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="categoryTree">
+                @each('layouts._category_item', $categoryTree, 'category')
+              </ul>
+            </li>
+          @endif
+        <!-- 顶部商品分类树 end -->
       </ul>
 
       <!-- Right Side Of Navbar -->
