@@ -76,13 +76,18 @@ class OrdersController extends Controller
         if ($order->ship_status !== Order::SHIP_STATUS_PENDING) {
             throw new InvalidRequestException('该订单已发货');
         }
+        // 拼团订单只有在拼团成功之后才可以发货
+        if ($order->type === Order::TYPE_CROWDFUNDING && 
+            $order->items[0]->product->crowdfunding->status !== CrowdfundingProduct::STATUS_SUCCESS) {
+            throw new InvalidRequestException("拼团订单只能在开团成功之后才能发货");
+        }
         // Laravel 5.5 之后 validate 方法可以返回校验过的值
         $data = $this->validate($request, [
             'express_company' => ['required'],
-            'express_no'      => ['required'],
+            'express_no' => ['required'],
         ], [], [
             'express_company' => '物流公司',
-            'express_no'      => '物流单号',
+            'express_no' => '物流单号',
         ]);
         // 将订单发货状态改为已发货，并存入物流信息
         $order->update([

@@ -123,17 +123,21 @@ class OrdersController extends Controller
         if (!$order->paid_at) {
             throw new InvalidRequestException('该订单未支付，不可退款');
         }
+        // 拼团订单不允许退款
+        if ($order->type === Order::TYPE_CROWDFUNDING) {
+            throw new InvaidRequestException("拼团的订单不支持退款操作");
+        }
         // 判断订单退款状态是否正确
         if ($order->refund_status !== Order::REFUND_STATUS_PENDING) {
             throw new InvalidRequestException('该订单已经申请过退款，请勿重复申请');
         }
         // 将用户输入的退款理由放到订单的 extra 字段中
-        $extra                  = $order->extra ?: [];
+        $extra = $order->extra ?: [];
         $extra['refund_reason'] = $request->input('reason');
         // 将订单退款状态改为已申请退款
         $order->update([
             'refund_status' => Order::REFUND_STATUS_APPLIED,
-            'extra'         => $extra,
+            'extra' => $extra,
         ]);
 
         return $order;
