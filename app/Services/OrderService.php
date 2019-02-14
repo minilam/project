@@ -84,4 +84,59 @@ class OrderService
 
         return $order;
     }
+
+    // 创建一个crowdfunding 方法用于实现拼团商品的下单逻辑
+    public function crowdfunding(User $user, UserAddress $address, ProductSku $sku, $amount)
+    {
+        // 开始事务
+        $order = \DB::transaction(function () use ($amount, $sku, $user, $address){
+            // 更新地址最后的使用时间
+            $address->update(['last_used_at' => now()]);
+            // 创建一个订单
+            $order = new Order([
+                'address' => [
+                    'address' => $address->full_address,
+                    'zip' => $address->zip,
+                    'contact_name' => $address->contact_name,
+                    'contact_phone' => $address->contact_phone,
+                ],
+                'remark' => '',
+                'total_amount' => $sku->price * $amount
+            ]);
+            // 订单关联用户
+            $order->user()->associate($user);
+            // 保存订单
+            $order->save();
+
+            // 创建一个新的订单项并于SKU关联
+            $item = $order->items()->make([
+                'amount' => $amount,
+                'price' => $sku->price,
+            ]);
+
+            $item->product()->associate($sku->product_id);
+            $item->productSku()->associate($sku);
+            $item->save();
+
+            // 扣减对应 SKU 库存
+            if ($sku->decreaseStock($amount) <= 0) {
+                throw new InvalidRequestException('该商品库存不足');
+            }
+
+            return $order;
+        });
+
+       // 众筹结束时间减去当前时间得到剩余秒数
+       $crowdfundingTtl = $sku->product->crowdfunding->end_at->getTimestamp() - time();
+       // 剩余秒数与默认订单关闭时间取较小值作为订单关闭时间
+       dispatch(new CloseOrder($order, min(config('app.order_ttl'), $crowdfundingTtl)));
+
+        /*
+         * 如果在发起关闭订单任务时直接用了默认的订单关闭时间，就有可能使订单的关闭时间在众筹结束之后，
+         * 而众筹结束之后如果还没有关闭订单，用户还可以支付，这并不符合众筹的规则，
+         * 因此我们需要通过取两者的较小值来避免订单关闭时间晚于众筹结束时间
+         */
+
+        return $order;
+    }
 }
