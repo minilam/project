@@ -22,22 +22,22 @@ class UpdateCrowdfundingProductProgress implements ShouldQueue
         if ($order->type !== Order::TYPE_CROWDFUNDING) {
             return;
         }
-        $crowdfunding = $order->itmes[0]->product->crowdfunding;
+        $crowdfunding = $order->items[0]->product->crowdfunding;
 
         $data = Order::query()->where('type', Order::TYPE_CROWDFUNDING)
             ->whereNotNull('paid_at')
-            ->whereHas('items', function($query){
+            ->whereHas('items', function($query) use ($crowdfunding) {
                 $query->where('product_id', $crowdfunding->product_id);
             })->first([
                 //  取出订单总额
                 \DB::raw('sum(total_amount) as total_amount'),
                 // 去除去重的支持团友数
-                \DB::raw('count(distinct(user_id) as user_count'),
+                \DB::raw('count(distinct(user_id)) as user_count'),
             ]);
         
         $crowdfunding->update([
             'total_amount' => $data->total_amount,
-            'user_count' => $user_count
+            'user_count' => $data->user_count
         ]);
     }
 }
