@@ -49,6 +49,7 @@ class FinishCrowdfunding extends Command
                 // 如果拼团的目标金额 大于实际的 金额
                 if ($crowdfunding->target_amount > $crowdfunding->total_amount) {
                     // 调用失败的逻辑，进行退款
+                    $this->crowdfundingFailed($crowdfunding);
                 } else {
                     // 成功的逻辑
                     $this->crowdfundingSucceed($crowdfunding);
@@ -68,6 +69,6 @@ class FinishCrowdfunding extends Command
     {
         // 1. 将拼团状态改为失败
         $crowdfunding->update(['status' => CrowdfundingProduct::STATUS_FAIL]);
-        dispatch(new RefundCrowdfundingOrders($crowdfunding)); // 利用队列来执行耗时较长的请求
+        dispatch(new RefundCrowdfundingOrders($crowdfunding));
     }
 }
