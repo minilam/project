@@ -8,7 +8,13 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Endroid\QrCode\QrCode;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Models\Installment;
 
+// 调用支付宝、微信等支付网关都会拉起支付 + 支付回调这两个步骤
+// 在完成一笔支付的过程中，支付网关做了哪些事情？
+// 1. 用户在电商网站拉起支付，支付网关在自己的系统中创建了一笔状态为待支付的订单
+// 2. 用户在支付网关输入正确密码后，支付网关扣减用户余额，并将订单状态修改为已支付，同时发起一个支付回调给电商网站
 class PaymentController extends Controller
 {
     public function payByAlipay(Order $order, Request $request)
@@ -149,5 +155,70 @@ class PaymentController extends Controller
         }
 
         return app('wechat_pay')->success();
+    }
+
+    public function payByInstallment(Order $order, Request $request)
+    {
+        // 判断订单是否属于当前用户
+        // 策略： authorize('own, $order) 方法会获取第二个参数 $order 的类名： App\Modles\Order
+        // 然后在 AuthServiceProvider 类的 $policies 属性中寻找对应的策略
+        $this->authorize('own', $order);
+        if ($order->paid_at || $order->closed) {
+            throw new InvalidRequestException('订单状态不正确');
+        }
+        // 订单金额不满足最低分期金额要求
+        if ($order->total_amount < config('installment.min_installment_amount')) {
+            throw new InvalidRequestException('订单金额低于最低分期金额');
+        }
+        // 校验用户提交的还款月数，数值必须是我们配置好费率的期数
+        $this->validate($request, [
+            'count' => [
+                'required',
+                Rule::in(array_keys(config('installment.installment_fee_rate')))
+            ]
+        ]);
+        // 删除同一笔商品订单发起过其他的状态是未支付的分期付款，避免同一笔商品订单有多个分期付款
+        Installment::query()
+            ->where('order_id', $order->id)
+            ->where('status', Installment::STATUS_PENDING)
+            ->delete();
+        
+        $count = $request->input('count');
+        $installment = new Installment([
+            // 总本金即为商品订单总金额
+            'total_amount' => $order->total_amount,
+            // 分期期数
+            'count' => $count,
+            // 从配置文件中读取相应期数的费率
+            'fee_rate' => config('installment.installment_fee_rate')[$count],
+            // 从配置文件中读取当期逾期费率
+            'fine_rate' => config('installment.installment_fine_rate'),
+        ]);
+        $installment->user()->associate($request->user());
+        $installment->order()->associate($order);
+        $installment->save();
+        // 第一期的还款截止日期为明天凌晨 0 点
+        $dueDate = Carbon::tomorrow();
+        // 计算第一期的本金
+        $base = big_number($order->total_amount)->divide($count)->getValue();
+        // 计算每一期的手续费
+        $fee = big_number($base)->multiply($installment->fee_rate)->divide(100)->getValue();
+        // 根据用户选择的还款期数，创建对应数量的还款计划
+        for ($i= 0; $i < $count; $i++) {
+            // 最后一期的本金需要用总本金减去前面几期的本金
+            if ($i === $count - 1) {
+                $base = big_number($order->total_amount)->subtract(big_number($base)->multiply($count - 1));
+            }
+            $installment->items()->create([
+                'sequence' => $i,
+                'base' => $base,
+                'fee' => $fee,
+                'due_date' => $dueDate
+            ]);
+            // 还款截止日期加 30 天
+            $dueDate = $dueDate->copy()->addDays(30);
+        }
+
+        return $installment;
     }
 }

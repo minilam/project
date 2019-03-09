@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class InstallmentItem extends Model
 {
     const REFUND_STATUS_PENDING = 'pending';
-    const REFUND_STAUTS_PROCESSING = 'processing';
+    const REFUND_STATUS_PROCESSING = 'processing';
     const REFUND_STATUS_SUCCESS = 'success';
     const REFUND_STATUS_FAILED = 'failed';
 
