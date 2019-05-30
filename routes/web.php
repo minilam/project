@@ -61,3 +61,4 @@ Route::post('payment/wechat/refund_notify', 'PaymentController@wechatRefundNotif
 // 后端的回调不能放在auth中间件中
 Route::post('installments/alipay/notify', 'InstallmentsController@alipayNotify')->name('installments.alipay.notify');
 Route::post('installments/wehcat/notify', 'InstallmentsController@wechatNotify')->name('installments.wechant.notify');
+Route::post('installments/wechat/refund_notify', 'InstallmentsController@wechatRefundNotify')->name('installments.wechat.refund_notify');
