@@ -38,13 +38,33 @@ class Product extends Model
         return \Storage::disk('public')->url($this->attributes['image']);
     }
 
+    // 分类
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
+    // 拼团商品
     public function crowdfunding()
     {
         return $this->hasOne(CrowdfundingProduct::class);
+    }
+
+    // 属性
+    public function properties()
+    {
+        // NOTE: Eloquent 使用父级模型名的「snake case」形式、加上 _id 后缀名作为外键字段
+        // return $this->hasMany(ProductProperty::class, 'product_id', 'id');
+        return $this->hasMany(ProductProperty::class);
+    }
+
+    public function getGroupedPropertiesAttribute()
+    {
+        return $this->properties
+            ->groupBy('name')
+            ->map(function ($properties) {
+                // 使用 map 方法将属性集合变为属性值集合
+                return $properties->pluck('value')->all();
+            });
     }
 }
