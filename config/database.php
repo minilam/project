@@ -128,4 +128,9 @@ return [
 
     ],
 
+    // Elasticsearch 支持多台服务器负载均衡，因此这里是一个数组
+    'elasticsearch' => [
+        'hosts' => explode(',', env('ES_HOST'))
+    ]
+
 ];
