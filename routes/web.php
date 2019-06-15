@@ -51,7 +51,7 @@ Route::group(['middleware' => ['auth', 'verified']], function() {
     Route::get('installments/{installment}/alipay', 'InstallmentsController@payByAlipay')->name('installments.alipay');
     Route::get('installments/alipay/return', 'InstallmentsController@alipayReturn')->name('installments.alipay.return');
 
-    Route::get('installments/{installment}/wehcant}', 'InstallmentsContrller@payByWehcat')->name('installments.wehcat');
+    Route::get('installments/{installment}/wehcant}', 'InstallmentsController@payByWehcat')->name('installments.wehcat');
 });
 
 Route::get('products/{product}', 'ProductsController@show')->name('products.show');

@@ -15,7 +15,6 @@ class Product extends Model
         self::TYPE_NORMAL => '普通商品',
         self::TYPE_CROWDFUNDING => '团购商品'
     ];
-    
     protected $fillable = [
         'title', 'long_title', 'description', 'image', 'on_sale',
         'rating', 'sold_count', 'review_count', 'price',
@@ -104,5 +103,10 @@ class Product extends Model
         });
 
         return $arr;
+    }
+
+    public function scopeByIds($query, $ids)
+    {
+        return $query->whereIn('id', $ids)->orderByRaw(sprintf("FIND_IN_SET(id, '%s')", join(',', $ids)));
     }
 }
