@@ -10,10 +10,12 @@ class Product extends Model
 {
     const TYPE_NORMAL = 'normal';
     const TYPE_CROWDFUNDING = 'crowdfunding';
+    const TYPE_SECKILL = 'seckill';
 
     public static $typeMap = [
         self::TYPE_NORMAL => '普通商品',
-        self::TYPE_CROWDFUNDING => '团购商品'
+        self::TYPE_CROWDFUNDING => '团购商品',
+        self::TYPE_SECKILL => '秒杀商品'
     ];
     protected $fillable = [
         'title', 'long_title', 'description', 'image', 'on_sale',
@@ -48,6 +50,11 @@ class Product extends Model
     public function crowdfunding()
     {
         return $this->hasOne(CrowdfundingProduct::class);
+    }
+
+    public function seckill()
+    {
+        return $this->hasOne(seckillProduct::class);
     }
 
     // 属性
