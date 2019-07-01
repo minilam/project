@@ -56,8 +56,9 @@
                         @elseif($order->closed)
                           已关闭
                         @else
-                          未支付<br>
-                          请于 {{ $order->created_at->addSeconds(config('app.order_ttl'))->format('H:i') }} 前完成支付<br>
+                          未支付<br>请于
+                          {{ $order->created_at->addSeconds($order->type !== \App\Models\Order::TYPE_SECKILL ? config('app.order_ttl') : config('app.seckill_order_ttl'))->format('H:i') }}
+                          前完成支付<br>
                           否则订单将自动关闭
                         @endif
                       </td>
