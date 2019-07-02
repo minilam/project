@@ -54,7 +54,7 @@ class Product extends Model
 
     public function seckill()
     {
-        return $this->hasOne(seckillProduct::class);
+        return $this->hasOne(SeckillProduct::class);
     }
 
     // 属性
