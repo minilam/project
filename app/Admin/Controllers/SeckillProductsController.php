@@ -34,7 +34,7 @@ class SeckillProductsController extends CommonProductsController
         $form->datetime('seckill.end_at', '秒杀结束时间')->rules('required|date');
         // 当商品表单保存完毕时触发
         $form->saved(function (Form $form) {
-            $product = $form->model();
+            $product = Product::query()->find($form->model()->id);
             // 商品重新加载秒杀字段
             $product->load(['seckill']);
             // 获取当前时间与秒杀结束时间的差值
